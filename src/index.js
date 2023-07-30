@@ -7,32 +7,56 @@ import "simplelightbox/dist/simple-lightbox.min.css";
 
 const form = document.querySelector('.search-form')
 const galleryEl = document.querySelector('.gallery')
+const buttonLoadMore = document.querySelector('.load-more')
+
 
 form.addEventListener('submit', onSearch)
+buttonLoadMore.addEventListener('click', onLoadMore)
 
-let gallery = new SimpleLightbox('.gallery a');
+let page = 1;
+let value = ''
+
 
 function onSearch (evt) {
     evt.preventDefault()
-    const value = evt.currentTarget.searchQuery.value
-if(galleryEl.classList.contains("active")){
-    galleryEl.innerHTML = ""
-}
-    getImgByValue(value)
+    value = evt.currentTarget.searchQuery.value
+    if(galleryEl.classList.contains("active")){
+      galleryEl.innerHTML = ''
+    }
+    if(value === ''){
+      Notiflix.Notify.warning('Please,fill in the input field') 
+    }else{
+      getImgByValue(value)
+    }
+    
 }
 
-function getImgByValue (valueInput){
-    getPicture(valueInput)
+function onLoadMore (){
+  
+page += 1;
+getImgByValue(value, page)
+}
+
+async function getImgByValue (valueInput,page){
+  
+    await getPicture(valueInput,page)
     .then(resp => {
-        
+    
         const dataAboutRequest = resp.data.hits
+
         const card = dataAboutRequest.map(createMarkUp).join('')
-        galleryEl.insertAdjacentHTML('afterbegin',card)
+        galleryEl.insertAdjacentHTML('beforeend',card)
+        
         galleryEl.classList.add("active")
         
-        console.log(resp.data.hits)
+        buttonLoadMore.classList.remove('is_hidden')
+      
+        console.log(resp.data)
         if(resp.data.hits.length === 0){
             Notiflix.Notify.failure("Sorry, there are no images matching your search query. Please try again.")
+        }
+        if(resp.data.totalHits === 0){
+
         }
     }
     )
@@ -41,7 +65,7 @@ function getImgByValue (valueInput){
 
 function createMarkUp ({webformatURL, largeImageURL, tags, likes, views, comments, downloads}) {
     return `<div class="photo-card">
-    <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+    <a class="thumb" href="${largeImageURL}"><img src="${webformatURL}" alt="${tags}" loading="lazy"/></a>
     <div class="info">
       <p class="info-item">
         <b>Likes: ${likes}</b>
@@ -58,12 +82,3 @@ function createMarkUp ({webformatURL, largeImageURL, tags, likes, views, comment
     </div>
   </div>`
 }
-// webformatURL - посилання на маленьке зображення для списку карток.
-// largeImageURL - посилання на велике зображення.
-// tags - рядок з описом зображення. Підійде для атрибуту alt.
-// likes - кількість лайків.
-// views - кількість переглядів.
-// comments - кількість коментарів.
-// downloads - кількість завантажень.
-
-// {/* <a href="${largeImageURL}"><img src="${webformatURL}" alt="${tags}" loading="lazy" /></a> */}
